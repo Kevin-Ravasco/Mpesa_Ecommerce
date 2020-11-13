@@ -1,0 +1,23 @@
+      <div class="col-md-12">
+        {% if messages %}
+          {% for message in messages %}
+             {% if message.tags == 'success' %}
+                  <div class="alert alert-success alert-with-icon" data-notify="container">
+                    <i class="material-icons" data-notify="icon">add_alert</i>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <i class="material-icons">close</i>
+                    </button>
+                    <span data-notify="message">{{ message }}</span>
+                  </div>
+             {% else %}
+                <div class="alert alert-danger alert-with-icon" data-notify="container">
+                    <i class="material-icons" data-notify="icon">info_outline</i>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <i class="material-icons">close</i>
+                    </button>
+                    <span data-notify="message">{{ message }}</span>
+                  </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </div>

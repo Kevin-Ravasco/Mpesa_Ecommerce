@@ -1,0 +1,243 @@
+{% extends 'store/base.html' %}
+{% load static %}
+{% block content %}
+
+	{% include 'store/messages.html' %}
+
+     <div class="row">
+		<div class="col-lg-6">
+			<div class="box-element" id="form-wrapper">
+				<form id="form">
+					<div id="user-info">
+						<div class="form-field">
+							<input required class="form-control" type="text" name="name" placeholder="Name..">
+						</div>
+						<div class="form-field">
+							<input required class="form-control" type="email" name="email" placeholder="Email..">
+						</div>
+					</div>
+					
+					<div id="shipping-info">
+						<hr>
+						<p>Shipping Information:</p>
+						<hr>
+						<div class="form-field">
+							<input class="form-control" type="text" name="address" placeholder="Address..">
+						</div>
+						<div class="form-field">
+							<input class="form-control" type="text" name="city" placeholder="City..">
+						</div>
+						<div class="form-field">
+							<input class="form-control" type="text" name="state" placeholder="State..">
+						</div>
+						<div class="form-field">
+							<input class="form-control" type="text" name="zipcode" placeholder="Zip code..">
+						</div>
+						<div class="form-field">
+							<input class="form-control" type="text" name="country" placeholder="Zip code..">
+						</div>
+					</div>
+
+					<hr>
+					<input id="form-button" class="btn btn-success btn-block" type="submit" value="Continue">
+				</form>
+			</div>
+
+			<br>
+			<div class="box-element hidden mb-200 p-3" id="payment-info">
+				<h3>Payment Options</h3>
+				<!---<h5 class="mt-100 mb-200">1. Paypal</h5>
+				<div id="paypal-button-container"></div>-->
+
+				<h5>M-Pesa</h5>
+				<h6>Note:</h6>
+				<ol>
+					<li>Enter an actively registered number on Mpesa</li>
+					<li>After entering the number, and clicking "complete payment" you will be prompted to enter your mpesa pin on your phone</li>
+					<li>Enter your correct mpesa pin to complete the payment process and place your order</li>
+					<li>As easy as 1, 2, 3 :-)</li>
+				</ol>
+
+				<form action="{% url 'lipa_na_mpesa' %}" method="post">
+					{% csrf_token %}
+					{% for field in pay_form %}
+					<div class="form-field">
+						{{ field }}
+					</div>
+					{% endfor %}
+					<button class="btn btn-success" id="phoneSubmit" type="submit">Complete Payment</button>
+				</form>
+				<div class="ml-500" id="input-message"></div>
+			</div>
+			
+		</div>
+
+		<div class="col-lg-6">
+			<div class="box-element">
+				<a  class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190; Back to Cart</a>
+				<hr>
+				<h3>Order Summary</h3>
+				<hr>
+				{% for item in items %}
+				<div class="cart-row">
+					<div style="flex:2"><img class="row-image" src="{{item.product.imageURL}}"></div>
+					<div style="flex:2"><p>{{item.product.name}}</p></div>
+					<div style="flex:1"><p>Kshs.{{item.product.price|floatformat:2}}</p></div>
+					<div style="flex:1"><p>x{{item.quantity}}</p></div>
+				</div>
+				{% endfor %}
+				<h5>Items:   {{order.get_cart_items}}</h5>
+				<h5>Total:   Kshs.{{order.get_cart_total|floatformat:2}}</h5>
+			</div>
+		</div>
+	</div>
+
+
+	<!--  paypal button rendering, replace YOUR-CLIENT-ID with your app's client id.
+	<script src="https://www.paypal.com/sdk/js?client-id=YOUR-CLIENT-ID&currency=USD&disable-funding=credit"></script>
+	-->
+	<script src="https://www.paypal.com/sdk/js?client-id=AXKDRwbRpPkM1-jUeUv9majVads2tl-lT4QTnkMhueD0WfOBKOdH65PZsWNLaZzhnZyk0nk3ME5U5xWE&currency=USD&disable-funding=credit"></script>
+
+	<script>
+		var total = '{{order.get_cart_total}}'
+        // Render the PayPal button into #paypal-button-container
+        paypal.Buttons({
+
+
+
+            // Set up the transaction
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value:parseFloat(total).toFixed(2)
+                        }
+                    }]
+                });
+            },
+
+            // Finalize the transaction
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    // Show a success message to the buyer
+                    submitFormData()
+                });
+            }
+
+        }).render('#paypal-button-container');
+    </script>
+
+	<script type="text/javascript">
+		var shipping = '{{order.shipping}}'
+
+		if (shipping == 'False'){
+		 	document.getElementById('shipping-info').innerHTML = ''
+		}
+
+		if (user != 'AnonymousUser'){
+		 	document.getElementById('user-info').innerHTML = ''
+		 }
+
+		if (shipping == 'False' && user != 'AnonymousUser'){
+			//Hide entire form if user is logged in and shipping is false
+				document.getElementById('form-wrapper').classList.add("hidden");
+				//Show payment if logged in user wants to buy an item that does not require shipping
+			    document.getElementById('payment-info').classList.remove("hidden");
+		}
+
+		var form = document.getElementById('form')
+		form.addEventListener('submit', function(e){
+	    	e.preventDefault()
+	    	console.log('Form Submitted...')
+	    	document.getElementById('form-button').classList.add("hidden");
+	    	document.getElementById('payment-info').classList.remove("hidden");
+	    })
+
+		/*
+	    document.getElementById('make-payment').addEventListener('click', function(e){
+	    	submitFormData()
+	    })
+	    */
+
+	    function submitFormData(){
+	    	console.log('Payment button clicked')
+
+	    	var userFormData = {
+				'name':null,
+				'email':null,
+				'total':total,
+			}
+
+			var shippingInfo = {
+				'address':null,
+				'city':null,
+				'state':null,
+				'zipcode':null,
+			}
+
+			if (shipping != 'False'){
+	    		shippingInfo.address = form.address.value
+		    	shippingInfo.city = form.city.value
+		    	shippingInfo.state = form.state.value
+		    	shippingInfo.zipcode = form.zipcode.value
+	    	}
+
+	    	if (user == 'AnonymousUser'){
+	    		userFormData.name = form.name.value
+	    		userFormData.email = form.email.value
+	    	}
+
+	    	console.log('Shipping Info:', shippingInfo)
+	    	console.log('User Info:', userFormData)
+
+	    	var url = "/process_order/"
+	    	fetch(url, {
+	    		method:'POST',
+	    		headers:{
+	    			'Content-Type':'applicaiton/json',
+	    			'X-CSRFToken':csrftoken,
+	    		}, 
+	    		body:JSON.stringify({'form':userFormData, 'shipping':shippingInfo}),
+	    		
+	    	})
+	    	.then((response) => response.json())
+	    	.then((data) => {
+				console.log('Success:', data);
+				alert('Transaction completed');  
+
+				cart = {}
+				document.cookie ='cart=' + JSON.stringify(cart) + ";domain=;path=/"
+
+				window.location.href = "{% url 'store' %}"
+
+				})
+	    }
+	</script>
+	<script>
+		var phoneField = document.getElementById('id_phone');
+		phoneField.addEventListener('keyup', function (event) {
+		var bt = document.getElementById('phoneSubmit');
+		var phone = phoneField.value.toString();
+		console.log(phone)
+		if (phone.startsWith("254") && (phone.length == 12)) {
+		  message = '<p class="text-success">Looks good</p>'
+          bt.disabled = false;
+        }
+        else {
+            bt.disabled = true;
+            if (phone.startsWith("254") == false){
+				message1 = '<p class="text-danger">phone number must start with 254 without "+"</p>'
+				document.getElementById("input-message").innerHTML = message1;
+            }
+            else if (phone.length != 12) {
+				message2 = '<p class="text-danger">invalid phone number length</p>'
+				document.getElementById("input-message").innerHTML = message2;
+            }
+        }
+		});
+
+	</script>
+{% endblock content %}
+
+
+ 
